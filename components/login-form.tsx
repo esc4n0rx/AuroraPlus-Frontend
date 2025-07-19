@@ -1,101 +1,66 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAppStore } from "@/lib/store"
-import { mockProfiles } from "@/lib/data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useAuth } from "@/hooks/use-auth"
+import { Calendar } from "lucide-react"
 
 export function LoginForm() {
   const [isLogin, setIsLogin] = useState(true)
-  const [isLoading, setIsLoading] = useState(false)
-  const { setUser } = useAppStore()
-  const router = useRouter()
+  const { login, register, isLoading, error, clearError } = useAuth()
 
   // Login form state
   const [loginData, setLoginData] = useState({
     email: "",
-    password: "",
+    senha: "",
   })
 
   // Register form state
   const [registerData, setRegisterData] = useState({
-    name: "",
+    nome: "",
     email: "",
-    birthDate: "",
-    password: "",
+    data_nascimento: "",
+    senha: "",
     confirmPassword: "",
   })
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const user = {
-      id: "1",
-      email: loginData.email,
-      profiles: mockProfiles,
-    }
-
-    setUser(user)
-    setIsLoading(false)
-    router.push("/profiles")
+    clearError()
+    await login(loginData)
   }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    clearError()
 
-    if (registerData.password !== registerData.confirmPassword) {
-      alert("As senhas não coincidem!")
+    if (registerData.senha !== registerData.confirmPassword) {
       return
     }
 
-    if (registerData.password.length < 6) {
-      alert("A senha deve ter pelo menos 6 caracteres!")
+    if (registerData.senha.length < 6) {
       return
     }
 
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    const user = {
-      id: "1",
-      email: registerData.email,
-      name: registerData.name,
-      profiles: [
-        {
-          id: "1",
-          name: registerData.name.split(" ")[0], // First name as profile
-          avatar: `/placeholder.svg?height=80&width=80&text=${registerData.name.charAt(0).toUpperCase()}`,
-        },
-      ],
-    }
-
-    setUser(user)
-    setIsLoading(false)
-    router.push("/profiles")
+    const { confirmPassword, ...submitData } = registerData
+    await register(submitData)
   }
 
   const handleGoogleLogin = () => {
-    // Simulate Google login
-    const user = {
-      id: "1",
-      email: "user@gmail.com",
-      profiles: mockProfiles,
-    }
-    setUser(user)
-    router.push("/profiles")
+    // Placeholder for Google OAuth integration
+    console.log("Google login - implementar OAuth")
+  }
+
+  const switchMode = () => {
+    setIsLogin(!isLogin)
+    clearError()
+    setLoginData({ email: "", senha: "" })
+    setRegisterData({ nome: "", email: "", data_nascimento: "", senha: "", confirmPassword: "" })
   }
 
   return (
@@ -110,6 +75,12 @@ export function LoginForm() {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         {isLogin ? (
           // Login Form
           <form onSubmit={handleLogin} className="space-y-4">
@@ -121,6 +92,7 @@ export function LoginForm() {
                 placeholder="seu@email.com"
                 value={loginData.email}
                 onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -131,8 +103,9 @@ export function LoginForm() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                value={loginData.password}
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                value={loginData.senha}
+                onChange={(e) => setLoginData({ ...loginData, senha: e.target.value })}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -145,13 +118,14 @@ export function LoginForm() {
           // Register Form
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
+              <Label htmlFor="nome">Nome Completo</Label>
               <Input
-                id="name"
+                id="nome"
                 type="text"
                 placeholder="Seu nome completo"
-                value={registerData.name}
-                onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                value={registerData.nome}
+                onChange={(e) => setRegisterData({ ...registerData, nome: e.target.value })}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -164,19 +138,24 @@ export function LoginForm() {
                 placeholder="seu@email.com"
                 value={registerData.email}
                 onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                disabled={isLoading}
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="birthDate">Data de Nascimento</Label>
-              <Input
-                id="birthDate"
-                type="date"
-                value={registerData.birthDate}
-                onChange={(e) => setRegisterData({ ...registerData, birthDate: e.target.value })}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="birthDate"
+                  type="date"
+                  value={registerData.data_nascimento}
+                  onChange={(e) => setRegisterData({ ...registerData, data_nascimento: e.target.value })}
+                  disabled={isLoading}
+                  required
+                />
+                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -185,8 +164,9 @@ export function LoginForm() {
                 id="register-password"
                 type="password"
                 placeholder="••••••••"
-                value={registerData.password}
-                onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                value={registerData.senha}
+                onChange={(e) => setRegisterData({ ...registerData, senha: e.target.value })}
+                disabled={isLoading}
                 required
                 minLength={6}
               />
@@ -201,12 +181,24 @@ export function LoginForm() {
                 placeholder="••••••••"
                 value={registerData.confirmPassword}
                 onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                disabled={isLoading}
                 required
                 minLength={6}
               />
+              {registerData.senha !== registerData.confirmPassword && registerData.confirmPassword && (
+                <p className="text-xs text-destructive">As senhas não coincidem</p>
+              )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={
+                isLoading || 
+                registerData.senha !== registerData.confirmPassword || 
+                registerData.senha.length < 6
+              }
+            >
               {isLoading ? "Criando conta..." : "Criar Conta"}
             </Button>
           </form>
@@ -221,7 +213,12 @@ export function LoginForm() {
           </div>
         </div>
 
-        <Button variant="outline" className="w-full gap-2 bg-transparent" onClick={handleGoogleLogin}>
+        <Button 
+          variant="outline" 
+          className="w-full gap-2 bg-transparent" 
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+        >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path
               fill="currentColor"
@@ -248,7 +245,8 @@ export function LoginForm() {
           <Button
             variant="link"
             className="p-0 h-auto font-normal text-primary hover:text-primary/80"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={switchMode}
+            disabled={isLoading}
           >
             {isLogin ? "Registre-se" : "Fazer login"}
           </Button>

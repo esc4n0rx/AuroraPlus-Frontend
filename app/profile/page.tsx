@@ -1,129 +1,255 @@
 "use client"
 
-import { useAppStore } from "@/lib/store"
-import { Navbar } from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { User, Settings, Bell, Download, HelpCircle, LogOut, Moon, Sun, ChevronRight } from "lucide-react"
-import Image from "next/image"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAppStore } from "@/lib/store"
+import { useProfiles } from "@/hooks/use-profiles"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ProfilePasswordDialog } from "@/components/profile-password-dialog"
+import { ProfileFormDialog } from "@/components/profile-form-dialog"
+import { Plus, Settings, Trash2 } from "lucide-react"
+import Image from "next/image"
+import type { ProfileAPI, CreateProfileRequest, UpdateProfileRequest } from "@/types/profile"
 
-export default function ProfilePage() {
-  const { user, theme, toggleTheme, setUser } = useAppStore()
+export default function ProfilesPage() {
+  const { user, setCurrentProfile } = useAppStore()
   const router = useRouter()
+  const { 
+    profiles, 
+    isLoading, 
+    error, 
+    createProfile, 
+    updateProfile, 
+    deleteProfile, 
+    authenticateProfile,
+    clearError 
+  } = useProfiles()
 
-  const handleLogout = () => {
-    setUser(null)
-    router.push("/")
-  }
+  const [selectedProfile, setSelectedProfile] = useState<ProfileAPI | null>(null)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [profileFormOpen, setProfileFormOpen] = useState(false)
+  const [editingProfile, setEditingProfile] = useState<ProfileAPI | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
 
-  if (!user?.currentProfile) {
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth")
+    }
+  }, [user, router])
+
+  if (!user) {
     return null
   }
 
-  const menuItems = [
-    { icon: User, label: "Gerenciar Perfis", href: "/profiles" },
-    { icon: Settings, label: "Configurações da Conta", href: "#" },
-    { icon: Bell, label: "Notificações", href: "#" },
-    { icon: Download, label: "Configurações de Download", href: "#" },
-    { icon: HelpCircle, label: "Ajuda e Suporte", href: "#" },
-  ]
+  const handleSelectProfile = async (profile: ProfileAPI) => {
+    if (profile.hasPassword) {
+      setSelectedProfile(profile)
+      setPasswordDialogOpen(true)
+    } else {
+      setCurrentProfile({
+        id: profile.id,
+        name: profile.nome,
+        avatar: profile.avatarUrl,
+        type: profile.tipo
+      })
+      router.push("/home")
+    }
+  }
+
+  const handleProfileAuth = async (password: string) => {
+    if (!selectedProfile) return
+
+    try {
+      setAuthError(null)
+      await authenticateProfile(selectedProfile.id, password)
+      setCurrentProfile({
+        id: selectedProfile.id,
+        name: selectedProfile.nome,
+        avatar: selectedProfile.avatarUrl,
+        type: selectedProfile.tipo
+      })
+      setPasswordDialogOpen(false)
+      setSelectedProfile(null)
+      router.push("/home")
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Erro na autenticação')
+    }
+  }
+
+  const handleCreateProfile = () => {
+    setEditingProfile(null)
+    setProfileFormOpen(true)
+  }
+
+  const handleEditProfile = (profile: ProfileAPI) => {
+    setEditingProfile(profile)
+    setProfileFormOpen(true)
+  }
+
+  const handleProfileSubmit = async (data: CreateProfileRequest | UpdateProfileRequest) => {
+    try {
+      if (editingProfile) {
+        await updateProfile(editingProfile.id, data as UpdateProfileRequest)
+      } else {
+        await createProfile(data as CreateProfileRequest)
+      }
+      setProfileFormOpen(false)
+      setEditingProfile(null)
+    } catch (error) {
+      // Error is handled by the hook
+      throw error
+    }
+  }
+
+  const handleDeleteProfile = async (profile: ProfileAPI) => {
+    if (confirm(`Tem certeza que deseja remover o perfil "${profile.nome}"?`)) {
+      try {
+        await deleteProfile(profile.id)
+      } catch (error) {
+        // Error is handled by the hook
+      }
+    }
+  }
+
+  const canAddProfile = profiles.length < 5
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="p-4 space-y-6">
-        {/* Profile Header */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16 rounded-full overflow-hidden bg-muted">
-                <Image
-                  src={user.currentProfile.avatar || "/placeholder.svg"}
-                  alt={user.currentProfile.name}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="space-y-1">
-                <h2 className="text-xl font-semibold text-foreground">{user.currentProfile.name}</h2>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Theme Toggle */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Aparência</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {theme === "dark" ? (
-                  <Moon className="h-5 w-5 text-muted-foreground" />
-                ) : (
-                  <Sun className="h-5 w-5 text-muted-foreground" />
-                )}
-                <div>
-                  <p className="font-medium text-foreground">Tema Escuro</p>
-                  <p className="text-sm text-muted-foreground">{theme === "dark" ? "Ativado" : "Desativado"}</p>
-                </div>
-              </div>
-              <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Menu Items */}
-        <Card>
-          <CardContent className="p-0">
-            {menuItems.map((item, index) => {
-              const Icon = item.icon
-              return (
-                <div key={item.label}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-between h-auto p-4 rounded-none"
-                    onClick={() => item.href !== "#" && router.push(item.href)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-foreground">{item.label}</span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  {index < menuItems.length - 1 && <Separator />}
-                </div>
-              )
-            })}
-          </CardContent>
-        </Card>
-
-        {/* Logout */}
-        <Card>
-          <CardContent className="p-0">
-            <Button
-              variant="ghost"
-              className="w-full justify-start h-auto p-4 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5 mr-3" />
-              Sair da Conta
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* App Info */}
-        <div className="text-center text-sm text-muted-foreground space-y-1">
-          <p>Aurora Streaming v1.0.0</p>
-          <p>© 2024 Aurora. Todos os direitos reservados.</p>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl text-center space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-foreground">Quem está assistindo?</h1>
+          <p className="text-muted-foreground">Selecione um perfil para continuar</p>
         </div>
-      </div>
 
-      <Navbar />
+        {error && (
+          <Alert variant="destructive" className="max-w-md mx-auto">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-muted" />
+                  <div className="h-4 bg-muted rounded mx-auto w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {profiles.map((profile) => (
+              <Card
+                key={profile.id}
+                className="cursor-pointer hover:scale-105 transition-transform border-2 hover:border-primary group"
+              >
+                <CardContent className="p-6 text-center space-y-4 relative">
+                  <div 
+                    className="relative w-20 h-20 mx-auto rounded-full overflow-hidden bg-muted"
+                    onClick={() => handleSelectProfile(profile)}
+                  >
+                    <Image 
+                      src={profile.avatarUrl || "/placeholder.svg"} 
+                      alt={profile.nome} 
+                      fill 
+                      className="object-cover" 
+                    />
+                    {profile.hasPassword && (
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <div className="w-6 h-6 bg-white/90 rounded-full flex items-center justify-center">
+                          <span className="text-xs">🔒</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div onClick={() => handleSelectProfile(profile)}>
+                    <h3 className="font-medium text-foreground">{profile.nome}</h3>
+                    {profile.tipo === 'kids' && (
+                      <span className="text-xs text-muted-foreground">Kids</span>
+                    )}
+                  </div>
+
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 bg-white/90 hover:bg-white text-black"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditProfile(profile)
+                      }}
+                    >
+                      <Settings className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 bg-white/90 hover:bg-red-100 text-red-600"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteProfile(profile)
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {canAddProfile && (
+              <Card 
+                className="cursor-pointer hover:scale-105 transition-transform border-2 border-dashed hover:border-primary"
+                onClick={handleCreateProfile}
+              >
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-muted flex items-center justify-center">
+                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-medium text-muted-foreground">Adicionar Perfil</h3>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {!canAddProfile && (
+          <p className="text-sm text-muted-foreground">
+            Limite máximo de 5 perfis atingido
+          </p>
+        )}
+
+        <ProfilePasswordDialog
+          profile={selectedProfile}
+          open={passwordDialogOpen}
+          onClose={() => {
+            setPasswordDialogOpen(false)
+            setSelectedProfile(null)
+            setAuthError(null)
+          }}
+          onAuthenticate={handleProfileAuth}
+          isLoading={isLoading}
+          error={authError}
+        />
+
+        <ProfileFormDialog
+          profile={editingProfile}
+          open={profileFormOpen}
+          onClose={() => {
+            setProfileFormOpen(false)
+            setEditingProfile(null)
+            clearError()
+          }}
+          onSubmit={handleProfileSubmit}
+          isLoading={isLoading}
+          error={error}
+        />
+      </div>
     </div>
   )
 }

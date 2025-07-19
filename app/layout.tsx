@@ -10,17 +10,24 @@ export const metadata: Metadata = {
   title: "Aurora Streaming",
   description: "Plataforma de streaming Aurora - Filmes, séries e esportes ao vivo",
   manifest: "/manifest.json",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f23" },
-  ],
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Aurora",
   },
-    generator: 'v0.dev'
+  generator: 'v0.dev'
+}
+
+// Viewport separado conforme Next.js 15
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f23" },
+  ],
 }
 
 export default function RootLayout({
