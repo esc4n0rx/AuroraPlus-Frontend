@@ -9,12 +9,12 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ProfilePasswordDialog } from "@/components/profile-password-dialog"
 import { ProfileFormDialog } from "@/components/profile-form-dialog"
-import { Plus, Settings, Trash2 } from "lucide-react"
+import { Plus, Settings, Trash2, RefreshCw } from "lucide-react"
 import Image from "next/image"
 import type { ProfileAPI, CreateProfileRequest, UpdateProfileRequest } from "@/types/profile"
 
 export default function ProfilesPage() {
-  const { user, setCurrentProfile } = useAppStore()
+  const { user, setCurrentProfile, apiToken } = useAppStore()
   const router = useRouter()
   const { 
     profiles, 
@@ -24,6 +24,7 @@ export default function ProfilesPage() {
     updateProfile, 
     deleteProfile, 
     authenticateProfile,
+    loadProfiles,
     clearError 
   } = useProfiles()
 
@@ -34,12 +35,12 @@ export default function ProfilesPage() {
   const [authError, setAuthError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !apiToken) {
       router.push("/auth")
     }
-  }, [user, router])
+  }, [user, apiToken, router])
 
-  if (!user) {
+  if (!user || !apiToken) {
     return null
   }
 
@@ -113,6 +114,11 @@ export default function ProfilesPage() {
     }
   }
 
+  const handleRefresh = () => {
+    clearError()
+    loadProfiles()
+  }
+
   const canAddProfile = profiles.length < 5
 
   return (
@@ -125,7 +131,17 @@ export default function ProfilesPage() {
 
         {error && (
           <Alert variant="destructive" className="max-w-md mx-auto">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                className="ml-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </AlertDescription>
           </Alert>
         )}
 
@@ -139,6 +155,14 @@ export default function ProfilesPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        ) : profiles.length === 0 && !error ? (
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">Nenhum perfil encontrado</p>
+            <Button onClick={handleRefresh} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Recarregar
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
@@ -218,7 +242,7 @@ export default function ProfilesPage() {
           </div>
         )}
 
-        {!canAddProfile && (
+        {!canAddProfile && profiles.length > 0 && (
           <p className="text-sm text-muted-foreground">
             Limite máximo de 5 perfis atingido
           </p>

@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AvatarSelector } from './avatar-selector'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import type { ProfileAPI, CreateProfileRequest, UpdateProfileRequest, Avatar } from '@/types/profile'
 
 interface ProfileFormDialogProps {
@@ -37,6 +38,7 @@ export function ProfileFormDialog({
     hasPassword: false
   })
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const isEditing = !!profile
 
@@ -61,24 +63,65 @@ export function ProfileFormDialog({
       })
     }
     setSelectedAvatar(null)
+    setLocalError(null)
   }, [profile, open])
+
+  const validateForm = (): boolean => {
+    setLocalError(null)
+
+    if (!formData.nome.trim()) {
+      setLocalError('Nome do perfil é obrigatório')
+      return false
+    }
+
+    if (formData.nome.length > 50) {
+      setLocalError('Nome deve ter no máximo 50 caracteres')
+      return false
+    }
+
+    if (formData.hasPassword && !isEditing && !formData.senha.trim()) {
+      setLocalError('Senha é obrigatória quando proteção está ativada')
+      return false
+    }
+
+    if (formData.senha && (formData.senha.length < 4 || formData.senha.length > 20)) {
+      setLocalError('Senha deve ter entre 4 e 20 caracteres')
+      return false
+    }
+
+    return true
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    const submitData: CreateProfileRequest | UpdateProfileRequest = {
-      nome: formData.nome,
-      ...(selectedAvatar && { avatar: selectedAvatar.filename }),
-      ...(formData.hasPassword && formData.senha && { senha: formData.senha }),
-      ...(!formData.hasPassword && isEditing && { senha: null }),
-      ordem: formData.ordem
+    if (!validateForm()) {
+      return
     }
 
-    if (!isEditing) {
-      (submitData as CreateProfileRequest).tipo = formData.tipo
-    }
+    try {
+      const submitData: CreateProfileRequest | UpdateProfileRequest = {
+        nome: formData.nome.trim(),
+        ...(selectedAvatar && { avatar: selectedAvatar.filename }),
+        ordem: formData.ordem
+      }
 
-    await onSubmit(submitData)
+      // Tratamento de senha
+      if (formData.hasPassword && formData.senha.trim()) {
+        submitData.senha = formData.senha
+      } else if (!formData.hasPassword && isEditing) {
+        submitData.senha = null // Remove senha existente
+      }
+
+      // Tipo só é enviado na criação
+      if (!isEditing) {
+        (submitData as CreateProfileRequest).tipo = formData.tipo
+      }
+
+      await onSubmit(submitData)
+    } catch (err) {
+      // Erro já é tratado pelo componente pai
+    }
   }
 
   const handleClose = () => {
@@ -91,12 +134,15 @@ export function ProfileFormDialog({
       hasPassword: false
     })
     setSelectedAvatar(null)
+    setLocalError(null)
     onClose()
   }
 
   const handleAvatarSelect = (avatar: Avatar) => {
     setSelectedAvatar(avatar)
   }
+
+  const displayError = localError || error
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -106,6 +152,12 @@ export function ProfileFormDialog({
             {isEditing ? 'Editar Perfil' : 'Criar Novo Perfil'}
           </DialogTitle>
         </DialogHeader>
+
+        {displayError && (
+          <Alert variant="destructive">
+            <AlertDescription>{displayError}</AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Tabs defaultValue="basic" className="w-full">
@@ -192,13 +244,12 @@ export function ProfileFormDialog({
                     disabled={isLoading}
                     minLength={4}
                     maxLength={20}
-                    required={!isEditing}
+                    required={!isEditing && formData.hasPassword}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Entre 4 e 20 caracteres
+                  </p>
                 </div>
-              )}
-
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
               )}
             </TabsContent>
 
