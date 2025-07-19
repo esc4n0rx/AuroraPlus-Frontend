@@ -84,3 +84,6 @@ export const useAppStore = create<AppState>()(
     },
   ),
 )
+
+// Re-export ContentAPI type from types/content for compatibility
+export type { ContentAPI } from '@/types/content'
