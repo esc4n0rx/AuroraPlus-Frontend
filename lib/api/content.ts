@@ -32,12 +32,12 @@ export class ContentService {
     }
   }
 
-  async getContentByName(name: string, type: 'movie' | 'series', year?: number): Promise<ContentWithTMDB> {
+  async getContentByName(name: string, year?: number): Promise<ContentWithTMDB> {
     try {
       console.log('=== GET CONTENT BY NAME API CALL ===');
-      console.log('Name:', name, 'Type:', type, 'Year:', year);
+      console.log('Name:', name, 'Year:', year);
       
-      const params: any = { type };
+      const params: any = {};
       if (year) params.year = year;
       
       const response = await apiClient.get<{ content: ContentWithTMDB }>(`/contents/search/${encodeURIComponent(name)}`, params);
@@ -56,12 +56,12 @@ export class ContentService {
     }
   }
 
-  async getContentByTMDBId(tmdbId: number, type: 'movie' | 'series'): Promise<ContentWithTMDB> {
+  async getContentByTMDBId(tmdbId: number): Promise<ContentWithTMDB> {
     try {
       console.log('=== GET CONTENT BY TMDB ID API CALL ===');
-      console.log('TMDB ID:', tmdbId, 'Type:', type);
+      console.log('TMDB ID:', tmdbId);
       
-      const response = await apiClient.get<{ content: ContentWithTMDB }>(`/contents/${tmdbId}`, { type });
+      const response = await apiClient.get<{ content: ContentWithTMDB }>(`/contents/${tmdbId}`);
       
       if (response.data.success && response.data.data) {
         const content = response.data.data.content;
@@ -107,7 +107,6 @@ export class ContentService {
       console.log('Include count:', includeCount);
       
       const response = await apiClient.get<CategoryStats>('/contents/categories', { 
-        type: 'both', 
         includeCount 
       });
       

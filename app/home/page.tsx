@@ -76,7 +76,6 @@ const categoryConfig = {
         console.log('Loading hero content for category:', config.hero)
         const response = await searchContents({
           category: config.hero,
-          type: selectedCategory === "Filmes" ? "movie" : selectedCategory === "Séries" ? "series" : "all",
           limit: 1,
           sortBy: "popularity",
           sortOrder: "desc"
@@ -120,7 +119,6 @@ const categoryConfig = {
           console.log('Loading section content for:', section.title, 'category:', section.category)
           const response = await searchContents({
             category: section.category,
-            type: selectedCategory === "Filmes" ? "movie" : selectedCategory === "Séries" ? "series" : "all",
             limit: 20,
             sortBy: "popularity",
             sortOrder: "desc"

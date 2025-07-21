@@ -1,0 +1,450 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "Aurora Streaming Proxy API",
+      "description": "API para proxy de streaming que resolve problemas de Mixed Content",
+      "version": "1.0.0"
+    },
+    "servers": [
+      {
+        "url": "http://localhost:3000/api/v1",
+        "description": "Servidor de desenvolvimento"
+      }
+    ],
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "paths": {
+      "/stream/proxy": {
+        "get": {
+          "summary": "Proxy de streaming de vídeo",
+          "description": "Faz proxy de streams HTTP para resolver Mixed Content em frontends HTTPS",
+          "parameters": [
+            {
+              "name": "url",
+              "in": "query",
+              "required": true,
+              "description": "URL do stream original",
+              "schema": {
+                "type": "string",
+                "format": "uri",
+                "example": "http://srvdigital.fun:80/movie/71277784/46664995/3918616.mp4"
+              }
+            },
+            {
+              "name": "profile-id",
+              "in": "header",
+              "description": "ID do perfil para logging",
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Stream proxificado com sucesso",
+              "content": {
+                "video/mp4": {
+                  "schema": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "application/vnd.apple.mpegurl": {
+                  "schema": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "headers": {
+                "Content-Type": {
+                  "description": "Tipo do conteúdo de vídeo",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "Content-Length": {
+                  "description": "Tamanho do conteúdo",
+                  "schema": {
+                    "type": "integer"
+                  }
+                },
+                "Accept-Ranges": {
+                  "description": "Suporte a requisições Range",
+                  "schema": {
+                    "type": "string",
+                    "example": "bytes"
+                  }
+                },
+                "Access-Control-Allow-Origin": {
+                  "description": "CORS header",
+                  "schema": {
+                    "type": "string",
+                    "example": "*"
+                  }
+                }
+              }
+            },
+            "206": {
+              "description": "Conteúdo parcial (Range request)",
+              "content": {
+                "video/mp4": {
+                  "schema": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "headers": {
+                "Content-Range": {
+                  "description": "Range do conteúdo retornado",
+                  "schema": {
+                    "type": "string",
+                    "example": "bytes 200-1023/1024"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Domínio não autorizado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {"type": "boolean", "example": false},
+                      "message": {"type": "string", "example": "Domínio não autorizado para streaming"}
+                    }
+                  }
+                }
+              }
+            },
+            "502": {
+              "description": "Erro no stream original",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {"type": "boolean", "example": false},
+                      "message": {"type": "string", "example": "Erro de conexão com o stream"}
+                    }
+                  }
+                }
+              }
+            },
+            "504": {
+              "description": "Timeout no stream",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {"type": "boolean", "example": false},
+                      "message": {"type": "string", "example": "Timeout no stream"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "options": {
+          "summary": "CORS preflight para streaming",
+          "description": "Responde requisições OPTIONS para CORS",
+          "responses": {
+            "200": {
+              "description": "Headers CORS configurados",
+              "headers": {
+                "Access-Control-Allow-Origin": {
+                  "schema": {"type": "string", "example": "*"}
+                },
+                "Access-Control-Allow-Methods": {
+                  "schema": {"type": "string", "example": "GET, HEAD, OPTIONS"}
+                },
+                "Access-Control-Allow-Headers": {
+                  "schema": {"type": "string", "example": "Range, Content-Type, Authorization"}
+                }
+              }
+            }
+          }
+        }
+      },
+      "/stream/direct": {
+        "get": {
+          "summary": "Verificar se precisa de proxy",
+          "description": "Determina se deve usar proxy ou URL direta baseado no protocolo",
+          "parameters": [
+            {
+              "name": "url",
+              "in": "query",
+              "required": true,
+              "description": "URL do stream para verificar",
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            {
+              "name": "X-Frontend-Protocol",
+              "in": "header",
+              "description": "Protocolo do frontend (http: ou https:)",
+              "schema": {
+                "type": "string",
+                "enum": ["http:", "https:"],
+                "default": "https:"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Informações sobre como acessar o stream",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {"type": "boolean", "example": true},
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "useProxy": {
+                            "type": "boolean",
+                            "description": "Se deve usar proxy"
+                          },
+                          "proxyUrl": {
+                            "type": "string",
+                            "description": "URL do proxy (se useProxy=true)"
+                          },
+                          "directUrl": {
+                            "type": "string", 
+                            "description": "URL direta (se useProxy=false)"
+                          },
+                          "originalUrl": {
+                            "type": "string",
+                            "description": "URL original fornecida"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "Motivo para usar proxy"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "examples": {
+                    "needs_proxy": {
+                      "summary": "Necessário usar proxy",
+                      "value": {
+                        "success": true,
+                        "data": {
+                          "useProxy": true,
+                          "proxyUrl": "https://api.aurora.com/api/v1/stream/proxy?url=http%3A//srvdigital.fun%3A80/movie/71277784/46664995/3918616.mp4",
+                          "originalUrl": "http://srvdigital.fun:80/movie/71277784/46664995/3918616.mp4",
+                          "reason": "Mixed content protection"
+                        }
+                      }
+                    },
+                    "direct_access": {
+                      "summary": "Acesso direto permitido",
+                      "value": {
+                        "success": true,
+                        "data": {
+                          "useProxy": false,
+                          "directUrl": "https://cdn.example.com/video.mp4",
+                          "originalUrl": "https://cdn.example.com/video.mp4"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/stream/check": {
+        "get": {
+          "summary": "Verificar disponibilidade do stream",
+          "description": "Testa se o stream está disponível e retorna informações básicas",
+          "parameters": [
+            {
+              "name": "url",
+              "in": "query",
+              "required": true,
+              "description": "URL do stream para verificar",
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Status do stream",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {"type": "boolean", "example": true},
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "object",
+                            "properties": {
+                              "available": {"type": "boolean"},
+                              "statusCode": {"type": "integer"},
+                              "contentType": {"type": "string"},
+                              "contentLength": {"type": "string"},
+                              "supportsRanges": {"type": "boolean"},
+                              "error": {"type": "string"}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "examples": {
+                    "available": {
+                      "summary": "Stream disponível",
+                      "value": {
+                        "success": true,
+                        "data": {
+                          "status": {
+                            "available": true,
+                            "statusCode": 200,
+                            "contentType": "video/mp4",
+                            "contentLength": "1048576000",
+                            "supportsRanges": true
+                          }
+                        }
+                      }
+                    },
+                    "unavailable": {
+                      "summary": "Stream indisponível",
+                      "value": {
+                        "success": true,
+                        "data": {
+                          "status": {
+                            "available": false,
+                            "error": "Connection timeout"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/stream/stats": {
+        "get": {
+          "summary": "Estatísticas de streaming do usuário",
+          "description": "Retorna estatísticas de uso de streaming do usuário autenticado",
+          "parameters": [
+            {
+              "name": "period",
+              "in": "query",
+              "description": "Período das estatísticas",
+              "schema": {
+                "type": "string",
+                "enum": ["day", "week", "month"],
+                "default": "day"
+              }
+            },
+            {
+              "name": "profileId",
+              "in": "query",
+              "description": "Filtrar por perfil específico",
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Estatísticas de streaming",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {"type": "boolean", "example": true},
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "stats": {
+                            "type": "object",
+                            "properties": {
+                              "totalStreams": {"type": "integer"},
+                              "movieStreams": {"type": "integer"},
+                              "seriesStreams": {"type": "integer"},
+                              "uniqueContent": {"type": "integer"},
+                              "period": {"type": "string"},
+                              "recentStreams": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "filename": {"type": "string"},
+                                    "type": {"type": "string"},
+                                    "timestamp": {"type": "string"}
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "stats": {
+                        "totalStreams": 45,
+                        "movieStreams": 32,
+                        "seriesStreams": 13,
+                        "uniqueContent": 28,
+                        "period": "week",
+                        "recentStreams": [
+                          {
+                            "filename": "3918616.mp4",
+                            "type": "movie",
+                            "timestamp": "2025-07-19T14:30:00.000Z"
+                          },
+                          {
+                            "filename": "4133714.mp4", 
+                            "type": "series",
+                            "timestamp": "2025-07-19T12:15:00.000Z"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        }
+      }
+    }
+  }

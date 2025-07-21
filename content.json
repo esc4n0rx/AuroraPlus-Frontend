@@ -1,0 +1,675 @@
+{
+    "apiVersion": "1.0.0",
+    "title": "Aurora Backend API - Sistema Híbrido",
+    "description": "API para streaming de conteúdos com sistema híbrido SQLite + JSON",
+    "baseUrl": "http://localhost:3000/api/v1",
+    "authentication": {
+      "type": "Bearer Token",
+      "header": "Authorization: Bearer <JWT_TOKEN>"
+    },
+    "routes": {
+      "contents": {
+        "search": {
+          "method": "GET",
+          "path": "/contents",
+          "description": "Buscar conteúdos com filtros avançados",
+          "queryParameters": {
+            "query": {
+              "type": "string",
+              "description": "Termo de busca",
+              "example": "Avatar",
+              "optional": true
+            },
+            "type": {
+              "type": "enum",
+              "values": ["movie", "series", "all"],
+              "description": "Tipo de conteúdo",
+              "default": "all",
+              "optional": true
+            },
+            "category": {
+              "type": "string",
+              "description": "Categoria do conteúdo",
+              "example": "FILMES",
+              "optional": true
+            },
+            "subcategory": {
+              "type": "string",
+              "description": "Subcategoria do conteúdo",
+              "example": "LANÇAMENTOS 2025",
+              "optional": true
+            },
+            "page": {
+              "type": "number",
+              "description": "Página para paginação",
+              "default": 1,
+              "optional": true
+            },
+            "limit": {
+              "type": "number",
+              "description": "Itens por página",
+              "default": 20,
+              "max": 100,
+              "optional": true
+            },
+            "sortBy": {
+              "type": "enum",
+              "values": ["name", "year", "category", "created_at"],
+              "description": "Campo para ordenação",
+              "default": "name",
+              "optional": true
+            },
+            "sortOrder": {
+              "type": "enum",
+              "values": ["asc", "desc"],
+              "description": "Ordem da classificação",
+              "default": "asc",
+              "optional": true
+            },
+            "loadTmdb": {
+              "type": "boolean",
+              "description": "Carregar dados TMDB automaticamente",
+              "default": true,
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents?query=Avatar&type=movie&category=FILMES&page=1&limit=10&loadTmdb=true",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "contents": [
+                {
+                  "id": "a1b2c3d4e5f6",
+                  "name": "Avatar",
+                  "type": "movie",
+                  "category": "FILMES",
+                  "subcategory": "AÇÃO",
+                  "year": 2009,
+                  "poster": "http://image.tmdb.org/t/p/w500/6EiRUJpuoeQPghrs3YNktfnqOVh.jpg",
+                  "streamUrl": "http://srvdigital.fun:80/movie/71277784/46664995/123456.mp4",
+                  "tmdbData": {
+                    "tmdbId": 19995,
+                    "title": "Avatar",
+                    "overview": "No exuberante mundo alienígena de Pandora...",
+                    "rating": 7.5,
+                    "releaseDate": "2009-12-18",
+                    "runtime": 162,
+                    "genres": [
+                      {"id": 28, "name": "Ação"},
+                      {"id": 12, "name": "Aventura"}
+                    ]
+                  }
+                }
+              ],
+              "pagination": {
+                "page": 1,
+                "limit": 10,
+                "total": 1,
+                "totalPages": 1,
+                "hasNext": false,
+                "hasPrev": false
+              },
+              "filters": {
+                "query": "Avatar",
+                "type": "movie",
+                "category": "FILMES",
+                "page": 1,
+                "limit": 10
+              },
+              "debug": {
+                "sqlQuery": "SELECT * FROM contents WHERE type = ? AND category LIKE ? AND (name LIKE ? OR original_name LIKE ?) ORDER BY name ASC LIMIT ? OFFSET ?",
+                "rawResults": 1,
+                "processedResults": 1
+              }
+            }
+          }
+        },
+        "getById": {
+          "method": "GET",
+          "path": "/contents/id/:id",
+          "description": "Obter conteúdo específico por ID",
+          "pathParameters": {
+            "id": {
+              "type": "string",
+              "description": "ID único do conteúdo",
+              "example": "a1b2c3d4e5f6"
+            }
+          },
+          "queryParameters": {
+            "loadTmdb": {
+              "type": "boolean",
+              "description": "Carregar dados TMDB",
+              "default": true,
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/id/a1b2c3d4e5f6?loadTmdb=true",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "content": {
+                "id": "a1b2c3d4e5f6",
+                "name": "Avatar",
+                "originalName": "Avatar (2009)",
+                "type": "movie",
+                "category": "FILMES",
+                "subcategory": "AÇÃO",
+                "year": 2009,
+                "poster": "http://image.tmdb.org/t/p/w500/6EiRUJpuoeQPghrs3YNktfnqOVh.jpg",
+                "streamUrl": "http://srvdigital.fun:80/movie/71277784/46664995/123456.mp4",
+                "tmdbData": {
+                  "tmdbId": 19995,
+                  "title": "Avatar",
+                  "originalTitle": "Avatar",
+                  "overview": "No exuberante mundo alienígena de Pandora vivem os Na'vi...",
+                  "rating": 7.5,
+                  "voteCount": 28847,
+                  "popularity": 751.8,
+                  "releaseDate": "2009-12-18",
+                  "runtime": 162,
+                  "budget": 237000000,
+                  "revenue": 2923706026,
+                  "poster": "http://image.tmdb.org/t/p/w500/6EiRUJpuoeQPghrs3YNktfnqOVh.jpg",
+                  "backdrop": "http://image.tmdb.org/t/p/w1280/o0s4XsEDfDlvit5pDRKjzXR4pp2.jpg",
+                  "genres": [
+                    {"id": 28, "name": "Ação"},
+                    {"id": 12, "name": "Aventura"},
+                    {"id": 14, "name": "Fantasia"}
+                  ]
+                },
+                "createdAt": "2025-01-20T15:30:00Z",
+                "updatedAt": "2025-01-20T15:30:00Z"
+              }
+            }
+          }
+        },
+        "getByName": {
+          "method": "GET",
+          "path": "/contents/search/:name",
+          "description": "Buscar conteúdo por nome específico",
+          "pathParameters": {
+            "name": {
+              "type": "string",
+              "description": "Nome do conteúdo",
+              "example": "Avatar"
+            }
+          },
+          "queryParameters": {
+            "type": {
+              "type": "enum",
+              "values": ["movie", "series"],
+              "description": "Tipo de conteúdo",
+              "optional": true
+            },
+            "year": {
+              "type": "number",
+              "description": "Ano de lançamento",
+              "example": 2009,
+              "optional": true
+            },
+            "loadTmdb": {
+              "type": "boolean",
+              "description": "Carregar dados TMDB",
+              "default": true,
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/search/Avatar?type=movie&year=2009",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "content": {
+                "id": "a1b2c3d4e5f6",
+                "name": "Avatar",
+                "type": "movie",
+                "year": 2009,
+                "tmdbData": {
+                  "tmdbId": 19995,
+                  "title": "Avatar",
+                  "overview": "No exuberante mundo alienígena de Pandora...",
+                  "rating": 7.5
+                }
+              }
+            }
+          }
+        },
+        "getSimilar": {
+          "method": "GET",
+          "path": "/contents/:name/similar",
+          "description": "Obter conteúdos similares",
+          "pathParameters": {
+            "name": {
+              "type": "string",
+              "description": "Nome do conteúdo base",
+              "example": "Avatar"
+            }
+          },
+          "queryParameters": {
+            "category": {
+              "type": "string",
+              "description": "Categoria para buscar similares",
+              "example": "FILMES",
+              "optional": true
+            },
+            "limit": {
+              "type": "number",
+              "description": "Limite de resultados",
+              "default": 10,
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/Avatar/similar?category=FILMES&limit=5",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "similar": [
+                {
+                  "id": "b2c3d4e5f6g7",
+                  "name": "Avatar: O Caminho da Água",
+                  "type": "movie",
+                  "category": "FILMES",
+                  "year": 2022,
+                  "poster": "http://image.tmdb.org/t/p/w500/example.jpg"
+                }
+              ]
+            }
+          }
+        },
+        "series": {
+          "method": "GET",
+          "path": "/contents",
+          "description": "Buscar séries com episódios agrupados",
+          "queryParameters": {
+            "type": "series",
+            "query": "Breaking Bad"
+          },
+          "exampleRequest": {
+            "url": "/contents?type=series&query=Breaking Bad",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "contents": [
+                {
+                  "id": "series123",
+                  "name": "Breaking Bad",
+                  "type": "series",
+                  "category": "SERIES",
+                  "subcategory": "NETFLIX",
+                  "year": 2008,
+                  "poster": "http://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
+                  "seasons": {
+                    "S01": {
+                      "episodes": [
+                        {
+                          "episode": 1,
+                          "name": "Breaking Bad S01 E01",
+                          "streamUrl": "http://srvdigital.fun:80/series/71277784/46664995/ep1.mp4"
+                        },
+                        {
+                          "episode": 2,
+                          "name": "Breaking Bad S01 E02",
+                          "streamUrl": "http://srvdigital.fun:80/series/71277784/46664995/ep2.mp4"
+                        }
+                      ],
+                      "poster": "http://image.tmdb.org/t/p/w500/season1.jpg"
+                    }
+                  },
+                  "episodeCount": 62,
+                  "seasonCount": 5,
+                  "tmdbData": {
+                    "tmdbId": 1396,
+                    "title": "Breaking Bad",
+                    "overview": "Um professor de química do ensino médio...",
+                    "rating": 9.5,
+                    "firstAirDate": "2008-01-20",
+                    "lastAirDate": "2013-09-29",
+                    "numberOfSeasons": 5,
+                    "numberOfEpisodes": 62
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "categories": {
+        "list": {
+          "method": "GET",
+          "path": "/contents/categories",
+          "description": "Listar categorias e subcategorias disponíveis",
+          "queryParameters": {
+            "type": {
+              "type": "enum",
+              "values": ["category", "subcategory", "both"],
+              "description": "Tipo de listagem",
+              "default": "both",
+              "optional": true
+            },
+            "includeCount": {
+              "type": "boolean",
+              "description": "Incluir contagem de itens",
+              "default": false,
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/categories?type=both&includeCount=true",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "categories": {
+                "FILMES": 15420,
+                "SERIES": 8750,
+                "ANIMES": 2340,
+                "DOCUMENTÁRIOS": 1100
+              },
+              "subcategories": {
+                "LANÇAMENTOS 2025": 340,
+                "AÇÃO": 2100,
+                "COMÉDIA": 1800,
+                "NETFLIX": 3200,
+                "PRIME VIDEO": 1900
+              }
+            }
+          }
+        }
+      },
+      "stats": {
+        "general": {
+          "method": "GET",
+          "path": "/contents/stats",
+          "description": "Obter estatísticas gerais do conteúdo",
+          "exampleRequest": {
+            "url": "/contents/stats",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "stats": {
+                "total": 27610,
+                "movies": 15420,
+                "series": 12190,
+                "withTmdb": 8500,
+                "categories": 12,
+                "subcategories": 45,
+                "byYear": {
+                  "2025": 340,
+                  "2024": 2100,
+                  "2023": 3200,
+                  "2022": 2800,
+                  "2021": 2400
+                },
+                "cacheInfo": {
+                  "size": 150,
+                  "entries": ["search:...", "content:..."]
+                },
+                "lastUpdated": "2025-01-20T15:30:00Z"
+              }
+            }
+          }
+        }
+      },
+      "tmdb": {
+        "details": {
+          "method": "GET",
+          "path": "/contents/:tmdbId",
+          "description": "Obter detalhes completos do TMDB",
+          "pathParameters": {
+            "tmdbId": {
+              "type": "number",
+              "description": "ID do conteúdo no TMDB",
+              "example": 19995
+            }
+          },
+          "queryParameters": {
+            "type": {
+              "type": "enum",
+              "values": ["movie", "series"],
+              "description": "Tipo de conteúdo",
+              "required": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/19995?type=movie",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "data": {
+              "content": {
+                "tmdbId": 19995,
+                "title": "Avatar",
+                "originalTitle": "Avatar",
+                "overview": "No exuberante mundo alienígena de Pandora vivem os Na'vi...",
+                "releaseDate": "2009-12-18",
+                "runtime": 162,
+                "rating": 7.5,
+                "voteCount": 28847,
+                "popularity": 751.8,
+                "budget": 237000000,
+                "revenue": 2923706026,
+                "adult": false,
+                "poster": "http://image.tmdb.org/t/p/w500/6EiRUJpuoeQPghrs3YNktfnqOVh.jpg",
+                "backdrop": "http://image.tmdb.org/t/p/w1280/o0s4XsEDfDlvit5pDRKjzXR4pp2.jpg",
+                "genres": [
+                  {"id": 28, "name": "Ação"},
+                  {"id": 12, "name": "Aventura"},
+                  {"id": 14, "name": "Fantasia"},
+                  {"id": 878, "name": "Ficção científica"}
+                ],
+                "productionCompanies": [
+                  {
+                    "id": 289,
+                    "name": "Twentieth Century Fox",
+                    "logo_path": "/8lvHyhjr8oUKOOy2dKXoALWKdp0.png"
+                  }
+                ],
+                "productionCountries": [
+                  {"iso_3166_1": "US", "name": "United States of America"},
+                  {"iso_3166_1": "GB", "name": "United Kingdom"}
+                ],
+                "spokenLanguages": [
+                  {"iso_639_1": "en", "name": "English"},
+                  {"iso_639_1": "es", "name": "Español"}
+                ]
+              }
+            }
+          }
+        },
+        "batchLoad": {
+          "method": "POST",
+          "path": "/contents/batch/tmdb",
+          "description": "Carregar dados TMDB em lote",
+          "body": {
+            "contentIds": {
+              "type": "array",
+              "description": "Lista de IDs de conteúdo",
+              "maxItems": 50,
+              "items": {"type": "string"}
+            },
+            "background": {
+              "type": "boolean",
+              "description": "Processar em background",
+              "default": true,
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/batch/tmdb",
+            "method": "POST",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "contentIds": ["a1b2c3d4e5f6", "b2c3d4e5f6g7", "c3d4e5f6g7h8"],
+              "background": true
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "message": "Carregamento iniciado em background",
+            "data": {
+              "processed": 3,
+              "background": true
+            }
+          }
+        }
+      },
+      "cache": {
+        "clear": {
+          "method": "DELETE",
+          "path": "/contents/cache",
+          "description": "Limpar cache de conteúdo",
+          "queryParameters": {
+            "contentId": {
+              "type": "string",
+              "description": "ID específico para limpar cache",
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/cache?contentId=a1b2c3d4e5f6",
+            "method": "DELETE",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "message": "Cache do conteúdo a1b2c3d4e5f6 limpo"
+          }
+        },
+        "reload": {
+          "method": "POST",
+          "path": "/contents/reload",
+          "description": "Forçar limpeza completa do cache",
+          "body": {
+            "force": {
+              "type": "boolean",
+              "description": "Forçar limpeza",
+              "default": false,
+              "optional": true
+            }
+          },
+          "exampleRequest": {
+            "url": "/contents/reload",
+            "method": "POST",
+            "headers": {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "force": true
+            }
+          },
+          "exampleResponse": {
+            "success": true,
+            "message": "Cache limpo com sucesso",
+            "data": {
+              "message": "Cache limpo com sucesso",
+              "timestamp": "2025-01-20T15:30:00Z"
+            }
+          }
+        }
+      }
+    },
+    "errorResponses": {
+      "400": {
+        "description": "Requisição inválida",
+        "example": {
+          "success": false,
+          "message": "Dados inválidos",
+          "errors": [
+            {
+              "field": "page",
+              "message": "Página deve ser maior que 0"
+            }
+          ]
+        }
+      },
+      "401": {
+        "description": "Não autorizado",
+        "example": {
+          "success": false,
+          "message": "Token de acesso requerido"
+        }
+      },
+      "404": {
+        "description": "Não encontrado",
+        "example": {
+          "success": false,
+          "message": "Conteúdo não encontrado"
+        }
+      },
+      "500": {
+        "description": "Erro interno do servidor",
+        "example": {
+          "success": false,
+          "message": "Erro interno do servidor"
+        }
+      }
+    },
+    "performanceNotes": {
+      "caching": {
+        "description": "Sistema de cache em múltiplas camadas",
+        "levels": [
+          "Cache em memória para buscas frequentes (10 min)",
+          "Cache de conteúdo individual (30 min)",
+          "Cache de dados TMDB (24 horas)",
+          "Índice SQLite para buscas rápidas"
+        ]
+      },
+      "tmdbLoading": {
+        "description": "Carregamento lazy de dados TMDB",
+        "behavior": [
+          "Dados carregados sob demanda na primeira requisição",
+          "Cache persistente em arquivo JSON e SQLite",
+          "Rate limiting automático (100ms entre requisições)",
+          "Processamento em background disponível"
+        ]
+      },
+      "searchOptimization": {
+        "description": "Otimizações de busca",
+        "features": [
+          "Índices SQLite para queries rápidas",
+          "Agrupamento automático de episódios de séries",
+          "Paginação eficiente",
+          "Filtros combinados otimizados"
+        ]
+      }
+    }
+  }

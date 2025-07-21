@@ -54,7 +54,6 @@ export interface ContentAPI {
   
   export interface ContentSearchParams {
     query?: string;
-    type?: 'movie' | 'series' | 'all';
     category?: string;
     subcategory?: string;
     page?: number;

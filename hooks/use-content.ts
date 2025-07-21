@@ -37,15 +37,15 @@ export function useContent() {
     }
   }, []);
 
-  const getContentByName = useCallback(async (name: string, type: 'movie' | 'series', year?: number) => {
+  const getContentByName = useCallback(async (name: string, year?: number) => {
     console.log('=== USE CONTENT - GET CONTENT BY NAME ===');
-    console.log('Name:', name, 'Type:', type, 'Year:', year);
+    console.log('Name:', name, 'Year:', year);
     
     setIsLoading(true);
     setError(null);
     
     try {
-      const content = await contentAPI.getContentByName(name, type, year);
+      const content = await contentAPI.getContentByName(name, year);
       console.log('✅ Content loaded successfully:', content);
       
       return content;
@@ -59,15 +59,15 @@ export function useContent() {
     }
   }, []);
 
-  const getContentByTMDBId = useCallback(async (tmdbId: number, type: 'movie' | 'series') => {
+  const getContentByTMDBId = useCallback(async (tmdbId: number) => {
     console.log('=== USE CONTENT - GET CONTENT BY TMDB ID ===');
-    console.log('TMDB ID:', tmdbId, 'Type:', type);
+    console.log('TMDB ID:', tmdbId);
     
     setIsLoading(true);
     setError(null);
     
     try {
-      const content = await contentAPI.getContentByTMDBId(tmdbId, type);
+      const content = await contentAPI.getContentByTMDBId(tmdbId);
       console.log('✅ TMDB content loaded successfully:', content);
       
       return content;

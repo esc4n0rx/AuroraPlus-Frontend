@@ -17,10 +17,9 @@ export function HeroBanner({ content }: HeroBannerProps) {
   const handleClick = () => {
     const params = new URLSearchParams({
       name: content.name,
-      type: content.type,
       ...(content.year && { year: content.year.toString() })
     })
-    router.push(`/content/details?${params.toString()}`)
+    router.push(`/content/${content.name}?${params.toString()}`)
   }
 
   const handleWatch = (e: React.MouseEvent) => {
@@ -45,48 +44,32 @@ export function HeroBanner({ content }: HeroBannerProps) {
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
+      {/* Content Info */}
       <div className="absolute bottom-0 left-0 right-0 p-6 space-y-4">
         <div className="space-y-2">
           {content.year && (
-            <Badge
-              className="text-sm font-bold bg-blue-600 hover:bg-blue-700"
-            >
+            <Badge className="text-sm font-bold bg-blue-600 hover:bg-blue-700">
               {content.year}
             </Badge>
           )}
 
-          <h1 className="text-2xl md:text-4xl font-bold text-white">{content.name}</h1>
+          <h2 className="text-2xl md:text-4xl font-bold text-white">{content.name}</h2>
 
-          <div className="flex items-center gap-2 text-sm text-gray-300">
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
-              Incluído no Aurora
-            </span>
-            <span>•</span>
-            <span>{content.category}</span>
-            {content.subcategory && (
-              <>
-                <span>•</span>
-                <span>{content.subcategory}</span>
-              </>
-            )}
-          </div>
+          <p className="text-gray-200 max-w-2xl text-sm md:text-base">
+            {content.name} é uma {content.type === 'series' ? 'série' : 'produção'} da categoria {content.category}.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3 flex-wrap">
           <Button size="lg" className="gap-2" onClick={handleWatch}>
             <Play className="h-5 w-5 fill-current" />
-            Assistir
+            {content.type === 'series' ? 'Assistir Série' : 'Reproduzir'}
           </Button>
 
           <Button size="lg" variant="secondary" className="gap-2">
             <Plus className="h-5 w-5" />
             Minha Lista
-          </Button>
-
-          <Button size="lg" variant="ghost" className="gap-2 text-white hover:text-white">
-            <Info className="h-5 w-5" />
-            Mais Info
           </Button>
         </div>
       </div>

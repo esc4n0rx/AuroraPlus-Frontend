@@ -35,13 +35,12 @@ export function ContentCard({ content }: ContentCardProps) {
   }
 
   const handleClick = () => {
-    // Navegar para a página de detalhes com o nome e tipo como parâmetros
+    // Navegar para a página de detalhes com o nome como parâmetro
     const params = new URLSearchParams({
       name: content.name,
-      type: content.type,
       ...(content.year && { year: content.year.toString() })
     })
-    router.push(`/content/details?${params.toString()}`)
+    router.push(`/content/${content.name}?${params.toString()}`)
   }
 
   return (
